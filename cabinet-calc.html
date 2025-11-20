@@ -3,44 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workshop Cabinet Designer (Pro PDF Polished)</title>
+    <title>Workshop Cabinet Designer (Brute Force Optimizer)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; }
         canvas { background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; font-weight: 600; }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; font-weight: 600; }
         .tab-inactive { color: #6b7280; }
         
-        .sheet-container {
-            position: relative;
-            background-color: #d4a373; 
-            border: 2px solid #8d6e63;
-            margin: 0 auto;
-            box-shadow: 4px 4px 15px rgba(0,0,0,0.15);
-        }
-        .cut-part {
-            position: absolute;
-            background-color: #faedcd;
-            border: 1px solid #5d4037;
-            font-size: 9px;
+        #sheet-wrapper {
             display: flex;
+            flex-direction: column;
+            gap: 20px;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            color: #3e2723;
-            overflow: hidden;
-            transition: all 0.2s;
-            line-height: 1.1;
+            padding: 20px;
+            background: #e5e7eb;
+            min-height: 500px;
         }
-        .cut-part:hover {
-            background-color: #fff;
-            z-index: 50;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transform: scale(1.05);
+        .sheet-canvas {
+            background-color: #d4a373; 
+            border: 1px solid #8d6e63;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
@@ -50,7 +36,7 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Workshop Cabinet Planner</h1>
-                <p class="text-slate-600 text-sm">18mm MR MDF | Oak Cleats | <span class="text-blue-600 font-bold">Final Polish v5.2</span></p>
+                <p class="text-slate-600 text-sm">18mm MR MDF | Oak Cleats | <span class="text-blue-600 font-bold">v16.0 Brute-Force Optimizer</span></p>
             </div>
             <div class="flex items-center gap-3">
                  <button onclick="generatePDF()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 font-semibold transition">
@@ -63,10 +49,8 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            <!-- LEFT COLUMN: Inputs (3 cols) -->
+            <!-- LEFT COLUMN -->
             <div class="lg:col-span-4 bg-slate-50 p-5 rounded-lg border border-slate-200 space-y-6 h-fit">
-                
                 <!-- Dimensions -->
                 <div>
                     <h2 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-3">1. Dimensions (mm)</h2>
@@ -84,94 +68,98 @@
                             <input type="number" id="depth" value="300" class="mt-1 w-full rounded border-gray-300 shadow-sm p-2 text-sm border" oninput="updateDesign()">
                         </div>
                     </div>
-                     <p class="text-xs text-gray-500">Tip: Try 790mm Height to fit 2 on a sheet.</p>
                 </div>
-
                 <!-- Config -->
                 <div>
                     <h2 class="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-3">2. Options</h2>
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Internal Shelves</label>
+                        <div class="flex items-center gap-2">
+                            <input type="range" id="shelfQty" min="0" max="4" value="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateDesign()">
+                            <span id="shelfQtyVal" class="text-sm font-bold text-blue-600 w-6 text-center">1</span>
+                        </div>
+                        <p id="shelf-gap-info" class="text-xs text-slate-500 mt-1">Calculating gap...</p>
+                    </div>
                     <div class="space-y-3">
                         <label class="flex items-start space-x-3 p-2 hover:bg-white rounded cursor-pointer transition border border-transparent hover:border-blue-200">
-                            <input id="recessedBack" type="checkbox" class="mt-1 text-blue-600 rounded" onchange="updateDesign()">
+                            <input id="recessedBack" type="checkbox" checked class="mt-1 text-blue-600 rounded" onchange="updateDesign()">
                             <div class="text-sm">
                                 <span class="font-semibold text-slate-700">Recessed Back (Advanced)</span>
                                 <p class="text-slate-500 text-xs mt-1">Hides the oak rail.</p>
-                                <div id="recessed-warning" class="hidden mt-2 text-orange-700 text-xs bg-orange-50 p-2 rounded border border-orange-200">
-                                    <strong>⚠ Clearance Warning:</strong> ~50mm ceiling gap required.
-                                </div>
                             </div>
                         </label>
-                        
                         <label class="flex items-center space-x-3 p-2 hover:bg-white rounded cursor-pointer transition">
                             <input id="includeDoor" type="checkbox" checked class="text-blue-600 rounded" onchange="updateDesign()">
                             <span class="text-sm font-semibold text-slate-700">Include Door in Depth</span>
                         </label>
                     </div>
                 </div>
-
-                <!-- Material Info -->
-                <div class="bg-orange-50 p-3 rounded border border-orange-100 text-sm">
-                    <h3 class="font-bold text-orange-800 mb-1">Sheet Stats</h3>
-                    <p class="text-orange-700 text-xs">Sheet: 2440 x 1220mm</p>
-                    <p class="text-orange-700 text-xs">Kerf: 3mm</p>
+                <!-- Legend -->
+                <div class="bg-slate-50 p-3 rounded border border-slate-200 text-sm">
+                    <h3 class="font-bold text-slate-800 mb-2">Part Legend</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs font-medium">
+                        <div class="flex items-center"><span class="w-3 h-3 rounded mr-2" style="background-color: #2563eb;"></span> Sides</div>
+                        <div class="flex items-center"><span class="w-3 h-3 rounded mr-2" style="background-color: #dc2626;"></span> Top/Bot</div>
+                        <div class="flex items-center"><span class="w-3 h-3 rounded mr-2" style="background-color: #d97706;"></span> Shelf</div>
+                        <div class="flex items-center"><span class="w-3 h-3 rounded mr-2" style="background-color: #16a34a;"></span> Door</div>
+                        <div class="flex items-center"><span class="w-3 h-3 rounded mr-2" style="background-color: #64748b;"></span> Back</div>
+                        <div class="flex items-center"><span class="w-3 h-3 rounded mr-2" style="background-color: #ea580c;"></span> Cleat</div>
+                    </div>
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: Visualization (9 cols) -->
+            <!-- RIGHT COLUMN -->
             <div class="lg:col-span-8">
-                
                 <!-- Tabs -->
                 <div class="flex space-x-1 border-b border-slate-200 mb-6 overflow-x-auto">
                     <button onclick="setTab('views')" id="tab-views" class="px-4 py-2 text-sm font-medium tab-active whitespace-nowrap">Blueprints</button>
-                    <button onclick="setTab('layout')" id="tab-layout" class="px-4 py-2 text-sm font-medium tab-inactive whitespace-nowrap">Smart Nesting</button>
+                    <button onclick="setTab('exploded')" id="tab-exploded" class="px-4 py-2 text-sm font-medium tab-inactive whitespace-nowrap">Exploded View</button>
+                    <button onclick="setTab('layout')" id="tab-layout" class="px-4 py-2 text-sm font-medium tab-inactive whitespace-nowrap">Cut Layouts</button>
                     <button onclick="setTab('cutlist')" id="tab-cutlist" class="px-4 py-2 text-sm font-medium tab-inactive whitespace-nowrap">Cut List</button>
                     <button onclick="setTab('instructions')" id="tab-instructions" class="px-4 py-2 text-sm font-medium tab-inactive whitespace-nowrap">Guide</button>
                 </div>
 
-                <!-- 1. BLUEPRINT VIEW -->
+                <!-- Views -->
                 <div id="view-container" class="block">
                     <canvas id="cabinetCanvas" width="700" height="500" class="w-full border bg-white rounded shadow-sm"></canvas>
                     <div class="mt-2 flex justify-between items-center text-xs text-slate-500 px-2">
-                        <div class="flex gap-4">
-                            <span class="flex items-center"><span class="w-3 h-3 bg-blue-600 rounded-full mr-1"></span> 18mm MDF</span>
-                            <span class="flex items-center"><span class="w-3 h-3 bg-orange-700 rounded-full mr-1"></span> Oak</span>
-                            <span class="flex items-center"><span class="w-3 h-3 bg-green-400 rounded-full mr-1"></span> Door</span>
-                        </div>
                         <span id="depth-readout" class="font-mono font-bold text-slate-700"></span>
                     </div>
                 </div>
 
-                <!-- 2. SHEET LAYOUT VIEW -->
+                <div id="exploded-container" class="hidden">
+                    <canvas id="explodedCanvas" width="700" height="500" class="w-full border bg-white rounded shadow-sm"></canvas>
+                </div>
+
+                <!-- Sheet Layout (Multi-Canvas) -->
                 <div id="layout-container" class="hidden">
                     <div class="flex justify-between items-center mb-4 bg-slate-100 p-3 rounded">
                         <div class="flex items-center space-x-4">
-                            <label class="text-sm font-bold text-slate-700">Try to Pack:</label>
+                            <label class="text-sm font-bold text-slate-700">Pack Quantity:</label>
                             <select id="packQty" onchange="updateDesign()" class="border rounded p-1 text-sm font-bold text-blue-600">
                                 <option value="1">1 Cabinet</option>
                                 <option value="2" selected>2 Cabinets</option>
-                                <option value="3">3 Cabinets</option>
+                                <option value="4">4 Cabinets</option>
+                                <option value="6">6 Cabinets</option>
                             </select>
                         </div>
-                        <div id="efficiency-stat" class="text-sm font-mono"></div>
+                        <div id="sheet-count-stat" class="text-sm font-bold text-slate-800"></div>
                     </div>
                     
-                    <!-- The Sheet Visual -->
-                    <div id="sheet-visual-wrapper" class="overflow-hidden bg-gray-50 p-4 rounded border border-gray-200 min-h-[400px] flex items-center justify-center">
-                        <!-- Populated by JS -->
+                    <div id="sheet-wrapper">
+                        <!-- Canvases Injected Here -->
                     </div>
-                    
-                    <div class="mt-3 text-xs text-gray-500 flex justify-between">
-                        <span>* Algorithm uses Guillotine Split heuristic (Mimics Rip Cuts)</span>
-                        <span>Red parts = Overflow (Need new sheet)</span>
+                    <div class="mt-3 p-3 bg-blue-50 rounded border border-blue-200 text-xs text-slate-700 italic text-center" id="strategy-label">
+                        * Running optimizer...
                     </div>
                 </div>
 
-                <!-- 3. CUT LIST TABLE -->
                 <div id="cutlist-container" class="hidden">
                     <div class="overflow-hidden border rounded-lg">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ref</th>
                                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Part Name</th>
                                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Qty</th>
                                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Dimensions (mm)</th>
@@ -179,230 +167,32 @@
                                     <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Notes</th>
                                 </tr>
                             </thead>
-                            <tbody id="cutlist-body" class="bg-white divide-y divide-gray-200 text-sm">
-                                <!-- JS -->
-                            </tbody>
+                            <tbody id="cutlist-body" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- 4. INSTRUCTIONS TAB -->
                 <div id="instructions-container" class="hidden bg-white p-6 rounded border">
-                    <!-- JS Populated now -->
                     <div id="instructions-content" class="prose prose-slate max-w-none"></div>
                 </div>
-
             </div>
         </div>
     </div>
 
     <script>
-        // --- DATA MODEL FOR INSTRUCTIONS ---
-        function getInstructionData(isRecessed) {
-            return [
-                {
-                    title: "Phase 1: Prep & Cutting",
-                    steps: [
-                        "Cut Oversized First: Break down sheets into manageable sizes before final cuts.",
-                        "Grooves: Run router grooves 8-9mm deep. Stop the groove 20mm from the front edge on Top/Bottom panels to keep the joint invisible.",
-                        "Oak Prep: Pre-drill the Oak cleats. Oak splits easily! Drill the 45-degree bevel on a wider board before ripping to width.",
-                        "Seal: Brush 50/50 PVA/water onto all cut MDF edges before assembly."
-                    ]
-                },
-                {
-                    title: "Phase 2: The Glue Up",
-                    steps: isRecessed ? [
-                        "Dry Fit: Assemble frame without glue. Ensure biscuit slots align.",
-                        "The Void Check: Note that the Top Panel is shorter than the Bottom Panel. This creates your service void.",
-                        "Glue Up: Apply glue to biscuits/dowels. Clamp Top and Bottom between Sides.",
-                        "Square it: Measure diagonals immediately. Pin with brads to hold square.",
-                        "CRITICAL STEP: Because the Top Panel is short, the top is open. Slide your 6mm Back Panel in from the top *after* glue up (or during). It should rest in the full-depth groove of the Bottom Panel."
-                    ] : [
-                        "Dry Fit: Assemble frame. Ensure back panel slides freely in grooves.",
-                        "Glue Up: Apply glue. Don't forget to insert the Back Panel now! It is trapped in the grooves.",
-                        "Clamp: Clamp Top/Bottom between Sides. Check for square.",
-                        "Clean Up: Let glue semi-dry (20 mins) then slice off squeeze-out with a chisel."
-                    ]
-                },
-                {
-                    title: "Phase 3: Installation",
-                    steps: isRecessed ? [
-                        "Cleat Install: Slide Oak cleats into the void *behind* the back panel. Screw through sides (countersink deep).",
-                        "Hanging: Lift cabinet 'Up and Over' the wall rail. Ensure 50mm ceiling clearance!",
-                        "Safety Screw: Drive a screw through the full-depth Bottom Panel (inside the cabinet) into the wall/studs to lock it down."
-                    ] : [
-                        "Cleat Install: Place Oak cleats *inside* the cabinet at the top. Screw through sides.",
-                        "Hanging: Lift cabinet onto wall rail. Minimal ceiling clearance needed.",
-                        "Safety Screw: Drive a screw through the bottom back rail (spacer) into the wall."
-                    ]
-                }
-            ];
-        }
-
-        // --- RENDER UI INSTRUCTIONS ---
-        function renderInstructionsUI(isRecessed) {
-            const container = document.getElementById('instructions-content');
-            const data = getInstructionData(isRecessed);
-            const title = isRecessed ? "Recessed Back (Advanced)" : "Standard Internal Cleat";
-            
-            let html = `<h3 class="text-xl font-bold text-slate-800 mb-4">Assembly Guide: <span class="text-blue-600">${title}</span></h3>`;
-            
-            data.forEach(phase => {
-                html += `<div class="mb-6">`;
-                html += `<h4 class="font-bold text-slate-500 uppercase text-xs tracking-wide mb-2 border-b pb-1">${phase.title}</h4>`;
-                html += `<ul class="list-disc pl-5 space-y-2 text-sm text-slate-700">`;
-                phase.steps.forEach(step => {
-                    html += `<li>${step}</li>`;
-                });
-                html += `</ul></div>`;
-            });
-            container.innerHTML = html;
-        }
-
-
-        // --- PDF GENERATION LOGIC ---
-        async function generatePDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-            
-            const H = parseInt(document.getElementById('height').value) || 800;
-            const W = parseInt(document.getElementById('width').value) || 500;
-            const D = parseInt(document.getElementById('depth').value) || 300;
-            const includeDoor = document.getElementById('includeDoor').checked;
-            const isRecessed = document.getElementById('recessedBack').checked;
-            
-            // PAGE 1: OVERVIEW
-            doc.setFontSize(22);
-            doc.setTextColor(30, 41, 59);
-            doc.text("Workshop Cabinet Plan", 15, 20);
-            
-            doc.setFontSize(12);
-            doc.setTextColor(100);
-            doc.text(`Dimensions: ${H}mm (H) x ${W}mm (W) x ${D}mm (D)`, 15, 30);
-            doc.text(`Mode: ${isRecessed ? "Recessed Back (Hidden Cleat)" : "Standard Internal Cleat"}`, 15, 36);
-            doc.text(`Material: 18mm MR MDF & Oak Hardwood`, 15, 42);
-
-            const canvas = document.getElementById('cabinetCanvas');
-            const imgData = canvas.toDataURL('image/png');
-            const props = doc.getImageProperties(imgData);
-            const imgWidth = 180;
-            const imgHeight = (props.height * imgWidth) / props.width;
-            doc.addImage(imgData, 'PNG', 15, 50, imgWidth, imgHeight);
-
-            // PAGE 2: CUT LIST
-            doc.addPage();
-            doc.setFontSize(16);
-            doc.setTextColor(0);
-            doc.text("Cut List", 15, 20);
-            doc.autoTable({
-                html: '#cutlist-body',
-                startY: 25,
-                head: [['Part Name', 'Qty', 'Dimensions (mm)', 'Material', 'Notes']],
-                theme: 'grid',
-                headStyles: { fillColor: [51, 65, 85] },
-                styles: { fontSize: 10 }
-            });
-
-            // PAGE 3: SHEET OPTIMIZATION
-            doc.addPage();
-            doc.setFontSize(16);
-            doc.text("Sheet Optimization (18mm MDF)", 15, 20);
-            
-            const packQty = parseInt(document.getElementById('packQty').value);
-            const parts = getPartsList(H, W, includeDoor ? D - 18 : D, 18, isRecessed);
-            const packParts = generatePartsForPacking(parts, packQty);
-            packParts.sort((a,b) => b.area - a.area);
-
-            const sheetW = 2440; const sheetH = 1220; const scale = 0.1; const startX = 15; const startY = 30; const kerf = 3;
-            
-            // Draw Sheet
-            doc.setDrawColor(100);
-            doc.setFillColor(212, 163, 115);
-            doc.rect(startX, startY, sheetW * scale, sheetH * scale, 'FD');
-            
-            // Draw Parts
-            let occupied = [];
-            doc.setFontSize(8);
-            doc.setTextColor(0);
-
-            packParts.forEach(p => {
-                let bestPos = findPosition(p.l, p.w, sheetW, sheetH, occupied, kerf);
-                let isRotated = false;
-                if (!bestPos) {
-                     bestPos = findPosition(p.w, p.l, sheetW, sheetH, occupied, kerf);
-                     if(bestPos) isRotated = true;
-                }
-                if (bestPos) {
-                    const drawW = isRotated ? p.w : p.l;
-                    const drawH = isRotated ? p.l : p.w;
-                    doc.setFillColor(250, 237, 205);
-                    doc.rect(startX + (bestPos.x * scale), startY + (bestPos.y * scale), drawW * scale, drawH * scale, 'FD');
-                    occupied.push({x: bestPos.x, y: bestPos.y, w: drawW, h: drawH});
-                    if (drawW * scale > 20 && drawH * scale > 10) {
-                        doc.text(`${p.name}`, startX + (bestPos.x*scale) + 2, startY + (bestPos.y*scale) + 5);
-                        doc.text(`${p.l}x${p.w}`, startX + (bestPos.x*scale) + 2, startY + (bestPos.y*scale) + 9);
-                    }
-                }
-            });
-
-            // PAGE 4: INSTRUCTIONS (REBUILT FOR CLEAN LAYOUT)
-            doc.addPage();
-            doc.setFontSize(18);
-            doc.setTextColor(30, 41, 59);
-            doc.text("Assembly Instructions", 15, 20);
-            
-            doc.setFontSize(11);
-            doc.setTextColor(100);
-            doc.text(`Mode: ${isRecessed ? "Recessed Back" : "Standard Cleat"}`, 15, 28);
-
-            const instructionData = getInstructionData(isRecessed);
-            let cursorY = 40;
-            
-            instructionData.forEach(phase => {
-                // Draw Header
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(12);
-                doc.setTextColor(0);
-                doc.text(phase.title, 15, cursorY);
-                cursorY += 7;
-
-                // Draw Steps
-                doc.setFont("helvetica", "normal");
-                doc.setFontSize(10);
-                doc.setTextColor(50);
-                
-                phase.steps.forEach(step => {
-                    // Bullet point logic
-                    const bullet = "\u2022";
-                    const indent = 5;
-                    const margin = 15;
-                    const maxWidth = 170; // A4 width minus margins
-                    
-                    doc.text(bullet, margin, cursorY);
-                    
-                    // Text wrapping with hanging indent
-                    const lines = doc.splitTextToSize(step, maxWidth - indent);
-                    doc.text(lines, margin + indent, cursorY);
-                    
-                    cursorY += (lines.length * 5) + 2; // Line height + paragraph spacing
-                });
-                cursorY += 5; // Spacing between phases
-            });
-
-            doc.save('Cabinet_Plan.pdf');
-        }
-
-        // --- EXISTING LOGIC ---
-
+        const COLORS = { side: "#2563eb", top: "#dc2626", shelf: "#d97706", door: "#16a34a", back: "#64748b", cleat: "#ea580c" };
         const canvas = document.getElementById('cabinetCanvas');
+        const explodedCanvas = document.getElementById('explodedCanvas');
         const ctx = canvas.getContext('2d');
+        const expCtx = explodedCanvas.getContext('2d');
+        
         let currentTab = 'views';
         
         function setTab(tab) {
             currentTab = tab;
-            ['views', 'layout', 'cutlist', 'instructions'].forEach(t => {
-                const btn = document.getElementById(`tab-${t}`);
+            ['views', 'exploded', 'layout', 'cutlist', 'instructions'].forEach(t => {
                 const div = document.getElementById(`${t === 'views' ? 'view' : t}-container`);
+                const btn = document.getElementById(`tab-${t}`);
                 if (t === tab) {
                     btn.className = "px-4 py-2 text-sm font-medium tab-active whitespace-nowrap";
                     div.className = "block";
@@ -411,59 +201,265 @@
                     div.className = "hidden";
                 }
             });
-            if (tab === 'layout') setTimeout(updateDesign, 10);
+            if (tab === 'layout' || tab === 'exploded') setTimeout(updateDesign, 10);
         }
 
         function updateDesign() {
             const H = parseInt(document.getElementById('height').value) || 800;
             const W = parseInt(document.getElementById('width').value) || 500;
             let D = parseInt(document.getElementById('depth').value) || 300;
-            const T = 18;
+            const shelfQty = parseInt(document.getElementById('shelfQty').value);
             const includeDoor = document.getElementById('includeDoor').checked;
             const isRecessed = document.getElementById('recessedBack').checked;
             const packQty = parseInt(document.getElementById('packQty').value);
 
-            document.getElementById('recessed-warning').className = isRecessed ? "mt-2 text-orange-700 text-xs bg-orange-50 p-2 rounded border border-orange-200 block" : "hidden";
+            document.getElementById('shelfQtyVal').innerText = shelfQty;
 
-            let carcassDepth = includeDoor ? D - T : D;
+            let carcassDepth = includeDoor ? D - 18 : D;
             const internalSpace = isRecessed ? carcassDepth - 20 - 6 - 18 : carcassDepth - 20 - 6;
             document.getElementById('depth-readout').innerText = `Internal Usable Depth: ~${internalSpace}mm`;
+            const internalHeight = H - 36; 
+            const shelfSpace = shelfQty > 0 ? (internalHeight - (shelfQty * 18)) / (shelfQty + 1) : internalHeight;
+            document.getElementById('shelf-gap-info').innerText = `Approx gap: ${Math.round(shelfSpace)}mm`;
 
-            drawBlueprint(H, W, carcassDepth, T, isRecessed);
-            const parts = getPartsList(H, W, carcassDepth, T, isRecessed);
+            drawBlueprint(H, W, carcassDepth, 18, isRecessed, shelfQty);
+            const parts = getPartsList(H, W, carcassDepth, 18, isRecessed, shelfQty);
+            drawExplodedView(H, W, carcassDepth, 18, isRecessed, parts, shelfQty);
             renderCutlist(parts);
-            renderInstructionsUI(isRecessed); // Call new UI renderer
-            
+            renderInstructionsUI(isRecessed);
             const partsForPacking = generatePartsForPacking(parts, packQty);
-            renderLayout(partsForPacking);
+            
+            // Run Multi-Strategy Optimizer
+            renderOptimizedLayout(partsForPacking); 
         }
 
-        function getPartsList(H, W, D, T, isRecessed) {
-            const backThick = 6;
-            const cleatThick = 18;
-            const hingeClearance = 25;
+        // --- GUILLOTINE PACKING ENGINE (Rectangle Split) ---
+        class GuillotinePacker {
+            constructor(width, height) {
+                this.width = width;
+                this.height = height;
+                this.freeRects = [{ x: 0, y: 0, w: width, h: height }];
+                this.packedItems = [];
+            }
+
+            fit(items) {
+                items.forEach(item => {
+                    let bestNode = null;
+                    let bestScore = Number.MAX_VALUE;
+                    let bestRotated = false;
+
+                    // Check Normal Fit
+                    let node = this.findNode(item.w, item.h);
+                    if (node) {
+                        // Score: Minimize leftover Area (Best Area Fit)
+                        let score = (node.w * node.h) - (item.w * item.h);
+                        if (score < bestScore) { bestNode = node; bestScore = score; bestRotated = false; }
+                    }
+                    
+                    // Check Rotated Fit
+                    let nodeR = this.findNode(item.h, item.w);
+                    if (nodeR) {
+                        let score = (nodeR.w * nodeR.h) - (item.w * item.h);
+                        if (score < bestScore) { bestNode = nodeR; bestScore = score; bestRotated = true; }
+                    }
+
+                    if (bestNode) {
+                        this.placeItem(item, bestNode, bestRotated);
+                    } else {
+                        item.packed = false;
+                    }
+                });
+            }
+
+            findNode(w, h) {
+                let bestNode = null;
+                let minArea = Number.MAX_VALUE;
+                for (let i = 0; i < this.freeRects.length; i++) {
+                    let rect = this.freeRects[i];
+                    if (w <= rect.w && h <= rect.h) {
+                        // Best Area Fit Heuristic
+                        if (rect.w * rect.h < minArea) {
+                            minArea = rect.w * rect.h;
+                            bestNode = rect;
+                        }
+                    }
+                }
+                return bestNode;
+            }
+
+            placeItem(item, rect, rotated) {
+                let index = this.freeRects.indexOf(rect);
+                this.freeRects.splice(index, 1);
+
+                let placedW = rotated ? item.h : item.w;
+                let placedH = rotated ? item.w : item.h;
+
+                item.x = rect.x;
+                item.y = rect.y;
+                item.packed = true;
+                item.drawW = placedW;
+                item.drawH = placedH;
+                this.packedItems.push(item);
+
+                const freeW = rect.w - placedW;
+                const freeH = rect.h - placedH;
+                
+                // MAXIMAL RECTANGLE HEURISTIC for Splitting
+                // We split so we keep the biggest free area possible
+                const maxAreaVert = Math.max(freeW * placedH, rect.w * freeH);
+                const maxAreaHorz = Math.max(placedW * freeH, freeW * rect.h);
+                
+                if (maxAreaVert >= maxAreaHorz) {
+                     // Vertical Split Strategy (Full Bottom)
+                     if (freeH > 0) this.freeRects.push({ x: rect.x, y: rect.y + placedH, w: rect.w, h: freeH });
+                     if (freeW > 0) this.freeRects.push({ x: rect.x + placedW, y: rect.y, w: freeW, h: placedH });
+                } else {
+                     // Horizontal Split Strategy (Full Right)
+                     if (freeW > 0) this.freeRects.push({ x: rect.x + placedW, y: rect.y, w: freeW, h: rect.h });
+                     if (freeH > 0) this.freeRects.push({ x: rect.x, y: rect.y + placedH, w: placedW, h: freeH });
+                }
+            }
+        }
+
+        // --- SIMULATION RUNNER ---
+        function runSimulation(parts, sortStrategy) {
+            // Deep copy items to prevent modification
+            let items = parts.map(p => ({ ...p, w: p.l + 3, h: p.w + 3 })); // Add 3mm Kerf
+            
+            // Apply Sorting Strategy
+            items.sort(sortStrategy);
+
+            const sheetW = 2440; const sheetH = 1220;
+            let sheets = [];
+            let currentSheet = [];
+            let remaining = [...items];
+            let sheetCount = 0;
+
+            // Run Packing
+            while (remaining.length > 0 && sheetCount < 20) {
+                sheetCount++;
+                let packer = new GuillotinePacker(sheetW, sheetH);
+                packer.fit(remaining);
+
+                let packedOnThisSheet = remaining.filter(p => p.packed);
+                remaining = remaining.filter(p => !p.packed);
+
+                if (packedOnThisSheet.length === 0 && remaining.length > 0) {
+                    // Fatal fit error
+                    return { sheetCount: 999, sheets: [], itemsCount: 0 }; 
+                }
+                sheets.push(packedOnThisSheet);
+            }
+            
+            // Score the simulation
+            // Score = (Sheet Count * 10000) + (Unused Area on Last Sheet)
+            // Lower score is better
+            // We actually just want min sheets, then max items on first sheet.
+            
+            return {
+                sheetCount: sheetCount,
+                sheets: sheets,
+                firstSheetCount: sheets[0] ? sheets[0].length : 0,
+                strategyName: sortStrategy.name // Function name
+            };
+        }
+
+        // --- STRATEGIES ---
+        const Strategies = {
+            AreaDesc: (a,b) => (b.w * b.h) - (a.w * a.h),
+            LongSideDesc: (a,b) => Math.max(b.w, b.h) - Math.max(a.w, a.h),
+            ShortSideDesc: (a,b) => Math.min(b.w, b.h) - Math.min(a.w, a.h),
+            PerimeterDesc: (a,b) => (b.w + b.h) - (a.w + a.h),
+            RatioDesc: (a,b) => Math.abs(b.w - b.h) - Math.abs(a.w - a.h) // Squarest first
+        };
+
+        function renderOptimizedLayout(parts) {
+            const container = document.getElementById('sheet-wrapper');
+            container.innerHTML = '';
+
+            // Run All Simulations
+            let results = [];
+            results.push({ sim: runSimulation(parts, Strategies.AreaDesc), name: "Area (Big First)" });
+            results.push({ sim: runSimulation(parts, Strategies.LongSideDesc), name: "Long Side (Strip)" });
+            results.push({ sim: runSimulation(parts, Strategies.ShortSideDesc), name: "Short Side (Wide)" });
+            results.push({ sim: runSimulation(parts, Strategies.PerimeterDesc), name: "Perimeter" });
+            
+            // Find Winner
+            // 1. Minimum Sheets
+            // 2. Maximum items packed on Sheet 1
+            results.sort((a, b) => {
+                if (a.sim.sheetCount !== b.sim.sheetCount) {
+                    return a.sim.sheetCount - b.sim.sheetCount; // Lower sheets wins
+                }
+                return b.sim.firstSheetCount - a.sim.firstSheetCount; // More items on sheet 1 wins
+            });
+
+            const winner = results[0];
+            
+            document.getElementById('strategy-label').innerHTML = `* Optimized using strategy: <strong>${winner.name}</strong>`;
+            document.getElementById('sheet-count-stat').innerHTML = `Total Sheets: <span class="text-blue-600 text-lg">${winner.sim.sheetCount}</span>`;
+
+            // Render Winner
+            const sheetW = 2440; const sheetH = 1220; const kerf = 3;
+            const displayWidth = 700; 
+            const scale = displayWidth / sheetW;
+            const displayHeight = sheetH * scale;
+
+            winner.sim.sheets.forEach((sheetParts, i) => {
+                const canvas = document.createElement('canvas');
+                canvas.width = displayWidth; canvas.height = displayHeight;
+                canvas.className = "sheet-canvas";
+                container.appendChild(canvas);
+                
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = "#d4a373"; ctx.fillRect(0, 0, displayWidth, displayHeight);
+                ctx.font = "14px Arial"; ctx.fillStyle = "#3e2723"; ctx.fillText(`Sheet ${i + 1}`, 10, 20);
+
+                sheetParts.forEach(p => {
+                    // Draw visual dimension (remove kerf)
+                    const visualW = p.drawW - kerf;
+                    const visualH = p.drawH - kerf;
+                    
+                    const x = p.x * scale; const y = p.y * scale;
+                    const w = visualW * scale; const h = visualH * scale;
+                    
+                    ctx.fillStyle = p.color; ctx.fillRect(x, y, w, h);
+                    ctx.strokeStyle = "rgba(0,0,0,0.2)"; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h);
+                    
+                    if (w > 30 && h > 15) {
+                        ctx.fillStyle = "#fff"; ctx.font = "10px Arial"; ctx.textAlign = "center";
+                        ctx.fillText(p.name, x + w/2, y + h/2 - 2);
+                        ctx.font = "9px Arial"; ctx.fillText(`${Math.round(visualW)}x${Math.round(visualH)}`, x + w/2, y + h/2 + 8);
+                    }
+                });
+            });
+        }
+
+        // --- Standard funcs ---
+        function getPartsList(H, W, D, T, isRecessed, shelfQty) {
+            const backThick = 6; const cleatThick = 18; const hingeClearance = 25;
             let parts = [];
             if (isRecessed) {
                 const internalDepth = D - (cleatThick + backThick + 2);
                 parts = [
-                    { name: "Side", qty: 2, l: H, w: D, mat: "18mm MDF", notes: "Rebate/Groove" },
-                    { name: "Top Panel", qty: 1, l: W - (2*T), w: internalDepth, mat: "18mm MDF", notes: "Short" },
-                    { name: "Bottom Panel", qty: 1, l: W - (2*T), w: D, mat: "18mm MDF", notes: "Full" },
-                    { name: "Shelf", qty: 1, l: W - (2*T) - 2, w: internalDepth - hingeClearance, mat: "18mm MDF", notes: "Set back" },
-                    { name: "Door", qty: 1, l: H - 4, w: W - 4, mat: "18mm MDF", notes: "Overlay" },
-                    { name: "Back", qty: 1, l: H - (2*T) + 16, w: W - (2*T) + 16, mat: "6mm MDF", notes: "Grooved fit" },
-                    { name: "Cleat", qty: 2, l: W - (2*T), w: 100, mat: "Oak", notes: "Hardwood" }
+                    { name: "Side Panel", qty: 2, l: H, w: D, mat: "18mm MDF", color: COLORS.side, notes: "Rebate/Groove" },
+                    { name: "Top Panel", qty: 1, l: W - (2*T), w: internalDepth, mat: "18mm MDF", color: COLORS.top, notes: "Internal (Short)" },
+                    { name: "Bottom Panel", qty: 1, l: W - (2*T), w: D, mat: "18mm MDF", color: COLORS.top, notes: "Full Depth" },
+                    { name: "Back Panel", qty: 1, l: H - (2*T) + 16, w: W - (2*T) + 16, mat: "6mm MDF", color: COLORS.back, notes: "Grooved fit" },
+                    { name: "Door", qty: 1, l: H - 4, w: W - 4, mat: "18mm MDF", color: COLORS.door, notes: "Overlay" },
+                    { name: "Cleat", qty: 2, l: W - (2*T), w: 100, mat: "Oak", color: COLORS.cleat, notes: "Hardwood" }
                 ];
+                if (shelfQty > 0) parts.push({ name: "Shelf", qty: shelfQty, l: W - (2*T) - 2, w: internalDepth - hingeClearance, mat: "18mm MDF", color: COLORS.shelf, notes: "Set back" });
             } else {
                 const backInset = 20;
                 parts = [
-                    { name: "Side", qty: 2, l: H, w: D, mat: "18mm MDF", notes: "Groove" },
-                    { name: "Top/Bot", qty: 2, l: W - (2*T), w: D, mat: "18mm MDF", notes: "Groove" },
-                    { name: "Shelf", qty: 1, l: W - (2*T) - 2, w: D - backInset - backThick - hingeClearance, mat: "18mm MDF", notes: "Reduced" },
-                    { name: "Door", qty: 1, l: H - 4, w: W - 4, mat: "18mm MDF", notes: "Overlay" },
-                    { name: "Back", qty: 1, l: H - (2*T) + 16, w: W - (2*T) + 16, mat: "6mm MDF", notes: "Grooved fit" },
-                    { name: "Cleat", qty: 2, l: W - (2*T), w: 100, mat: "Oak", notes: "Hardwood" }
+                    { name: "Side Panel", qty: 2, l: H, w: D, mat: "18mm MDF", color: COLORS.side, notes: "Groove" },
+                    { name: "Top/Bottom", qty: 2, l: W - (2*T), w: D, mat: "18mm MDF", color: COLORS.top, notes: "Groove" },
+                    { name: "Back Panel", qty: 1, l: H - (2*T) + 16, w: W - (2*T) + 16, mat: "6mm MDF", color: COLORS.back, notes: "Grooved fit" },
+                    { name: "Door", qty: 1, l: H - 4, w: W - 4, mat: "18mm MDF", color: COLORS.door, notes: "Overlay" },
+                    { name: "Cleat", qty: 2, l: W - (2*T), w: 100, mat: "Oak", color: COLORS.cleat, notes: "Hardwood" }
                 ];
+                if (shelfQty > 0) parts.push({ name: "Shelf", qty: shelfQty, l: W - (2*T) - 2, w: D - backInset - backThick - hingeClearance, mat: "18mm MDF", color: COLORS.shelf, notes: "Reduced" });
             }
             return parts;
         }
@@ -473,154 +469,150 @@
             baseParts.forEach(p => {
                 if (p.mat === "18mm MDF") { 
                     for(let i=0; i < p.qty * multiplier; i++) {
-                        packList.push({ name: p.name, l: p.l, w: p.w, area: p.l * p.w });
+                        packList.push({ name: p.name, l: p.l, w: p.w, color: p.color, area: p.l * p.w });
                     }
                 }
             });
             return packList;
         }
-
-        function renderLayout(parts) {
-            const container = document.getElementById('sheet-visual-wrapper');
-            container.innerHTML = '';
-            const sheetW = 2440; const sheetH = 1220; const kerf = 3; 
-            const displayWidth = container.clientWidth;
-            const scale = displayWidth / sheetW;
-            const displayHeight = sheetH * scale;
-            const sheetDiv = document.createElement('div');
-            sheetDiv.className = "sheet-container";
-            sheetDiv.style.width = displayWidth + "px";
-            sheetDiv.style.height = displayHeight + "px";
-            parts.forEach(p => { if (p.h > p.w) { let temp = p.w; p.w = p.h; p.h = temp; } });
-            parts.sort((a,b) => b.area - a.area);
-            let occupied = []; let placedCount = 0; let usedArea = 0;
-            parts.forEach(p => {
-                let bestPos = findPosition(p.l, p.w, sheetW, sheetH, occupied, kerf);
-                let isRotated = false;
-                if (!bestPos) {
-                     bestPos = findPosition(p.w, p.l, sheetW, sheetH, occupied, kerf);
-                     if(bestPos) { isRotated = true; }
-                }
-                const partDiv = document.createElement('div');
-                partDiv.className = "cut-part";
-                if (bestPos) {
-                    const drawW = isRotated ? p.w : p.l;
-                    const drawH = isRotated ? p.l : p.w;
-                    partDiv.style.left = (bestPos.x * scale) + "px";
-                    partDiv.style.top = (bestPos.y * scale) + "px";
-                    partDiv.style.width = (drawW * scale) + "px";
-                    partDiv.style.height = (drawH * scale) + "px";
-                    partDiv.innerHTML = `<span>${p.name}<br>${p.l}x${p.w}</span>`;
-                    occupied.push({x: bestPos.x, y: bestPos.y, w: drawW, h: drawH});
-                    usedArea += (drawW * drawH);
-                    placedCount++;
-                } else {
-                    partDiv.style.right = "10px";
-                    partDiv.style.top = (10 + ((parts.length - placedCount) * 20)) + "px";
-                    partDiv.style.width = "50px";
-                    partDiv.style.height = "20px";
-                    partDiv.innerHTML = "❌";
-                    partDiv.style.backgroundColor = "#fecaca";
-                    partDiv.style.border = "1px solid #dc2626";
-                }
-                sheetDiv.appendChild(partDiv);
-            });
-            container.appendChild(sheetDiv);
-            const efficiency = (usedArea / (sheetW * sheetH) * 100).toFixed(1);
-            const statDiv = document.getElementById('efficiency-stat');
-            if (placedCount < parts.length) {
-                statDiv.innerHTML = `<span class="text-red-600 font-bold">❌ Overflow! ${parts.length - placedCount} parts left.</span>`;
-            } else {
-                statDiv.innerHTML = `<span class="text-green-700 font-bold">✅ Fits! (${efficiency}% Area)</span>`;
-            }
-        }
-
-        function findPosition(w, h, sheetW, sheetH, occupied, kerf) {
-            let candidatesX = [0];
-            let candidatesY = [0];
-            occupied.forEach(occ => {
-                candidatesX.push(occ.x + occ.w + kerf);
-                candidatesY.push(occ.y + occ.h + kerf);
-            });
-            candidatesX.sort((a,b) => a-b);
-            candidatesY.sort((a,b) => a-b);
-            for (let y of candidatesY) {
-                if (y + h > sheetH) continue;
-                for (let x of candidatesX) {
-                    if (x + w > sheetW) continue;
-                    let collision = false;
-                    for (let occ of occupied) {
-                        if (rectIntersect(x, y, w, h, occ.x, occ.y, occ.w, occ.h, kerf)) {
-                            collision = true; break;
-                        }
-                    }
-                    if (!collision) return {x, y};
-                }
-            }
-            return null;
-        }
-
-        function rectIntersect(x1, y1, w1, h1, x2, y2, w2, h2, kerf) {
-            return x1 < x2 + w2 + kerf && x1 + w1 + kerf > x2 && y1 < y2 + h2 + kerf && y1 + h1 + kerf > y2;
-        }
-
-        function renderCutlist(parts) {
-            const tbody = document.getElementById('cutlist-body');
-            tbody.innerHTML = '';
-            parts.forEach(part => {
-                tbody.innerHTML += `<tr>
-                    <td class="px-4 py-3 font-medium text-slate-900">${part.name}</td>
-                    <td class="px-4 py-3 text-slate-500">${part.qty}</td>
-                    <td class="px-4 py-3 font-mono text-slate-600">${part.l} x ${part.w}</td>
-                    <td class="px-4 py-3 text-slate-600">${part.mat}</td>
-                    <td class="px-4 py-3 text-xs text-slate-400 italic">${part.notes}</td>
-                </tr>`;
-            });
-        }
-
-        function drawBlueprint(H, W, D, T, isRecessed) {
+        
+        function drawBlueprint(H, W, D, T, isRecessed, shelfQty) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const scale = Math.min(canvas.width / (W * 3.2), canvas.height / (H * 1.3));
-            const startX = 40;
-            const startY = 40;
-            // FRONT
+            const startX = 40; const startY = 40;
             ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
             ctx.strokeRect(startX, startY, W*scale, H*scale);
-            ctx.setLineDash([5, 5]); ctx.beginPath();
-            ctx.moveTo(startX + W*scale, startY + 100*scale);
-            ctx.lineTo(startX + (W-20)*scale, startY + H/2*scale);
-            ctx.lineTo(startX + W*scale, startY + (H-100)*scale);
-            ctx.stroke(); ctx.setLineDash([]);
             ctx.fillStyle = '#475569'; ctx.font = '14px sans-serif';
             ctx.fillText("Front", startX + W*scale/2 - 20, startY + H*scale + 20);
-            // SIDE
-            const sideX = startX + W*scale + 80;
-            const sideW = D * scale;
-            ctx.fillStyle = '#e2e8f0'; ctx.fillRect(sideX, startY, sideW, H*scale);
-            ctx.strokeRect(sideX, startY, sideW, H*scale);
-            ctx.fillStyle = '#86efac'; ctx.fillRect(sideX - T*scale, startY, T*scale, H*scale);
-            ctx.strokeRect(sideX - T*scale, startY, T*scale, H*scale);
+            const sideX = startX + W*scale + 80; const sideW = D * scale;
+            ctx.fillStyle = COLORS.side; ctx.fillRect(sideX, startY, sideW, H*scale); ctx.strokeRect(sideX, startY, sideW, H*scale);
+            ctx.fillStyle = COLORS.door; ctx.fillRect(sideX - T*scale, startY, T*scale, H*scale); ctx.strokeRect(sideX - T*scale, startY, T*scale, H*scale);
             const backThick = 6; const cleatThick = 18;
             let backPanelX, cleatX;
             if (isRecessed) {
-                cleatX = sideX + sideW - (cleatThick * scale);
-                backPanelX = cleatX - (backThick * scale);
-                ctx.fillStyle = '#c2410c'; ctx.fillRect(cleatX, startY + T*scale, cleatThick*scale, 100*scale);
-                ctx.fillStyle = '#64748b'; ctx.fillRect(backPanelX, startY + T*scale, backThick*scale, (H - 2*T)*scale);
-                ctx.fillStyle = '#cbd5e1'; ctx.fillRect(sideX, startY, backPanelX - sideX, T*scale); 
-                ctx.fillStyle = '#cbd5e1'; ctx.fillRect(sideX, startY + (H-T)*scale, sideW, T*scale);
-                ctx.fillStyle = '#333'; ctx.font = '10px sans-serif';
-                ctx.fillText("Void", cleatX + 5, startY + 30);
+                cleatX = sideX + sideW - (cleatThick * scale); backPanelX = cleatX - (backThick * scale);
+                ctx.fillStyle = COLORS.cleat; ctx.fillRect(cleatX, startY + T*scale, cleatThick*scale, 100*scale);
+                ctx.fillStyle = COLORS.back; ctx.fillRect(backPanelX, startY + T*scale, backThick*scale, (H - 2*T)*scale);
+                ctx.fillStyle = COLORS.top; ctx.fillRect(sideX, startY, backPanelX - sideX, T*scale); ctx.fillRect(sideX, startY + (H-T)*scale, sideW, T*scale); 
+                if (shelfQty > 0) {
+                     ctx.fillStyle = COLORS.shelf; const shelfW = backPanelX - sideX - (20*scale); const spacing = (H*scale) / (shelfQty + 1);
+                     for(let i=1; i<=shelfQty; i++) { ctx.fillRect(sideX, startY + (spacing*i), shelfW, T*scale); }
+                }
             } else {
-                backPanelX = sideX + sideW - (20 * scale) - (backThick * scale);
-                cleatX = backPanelX - (cleatThick * scale);
-                ctx.fillStyle = '#64748b'; ctx.fillRect(backPanelX, startY + T*scale, backThick*scale, (H - 2*T)*scale);
-                ctx.fillStyle = '#c2410c'; ctx.fillRect(cleatX, startY + T*scale, cleatThick*scale, 100*scale);
-                ctx.fillStyle = '#cbd5e1'; ctx.fillRect(sideX, startY, sideW, T*scale);
-                ctx.fillStyle = '#cbd5e1'; ctx.fillRect(sideX, startY + (H-T)*scale, sideW, T*scale);
+                backPanelX = sideX + sideW - (20 * scale) - (backThick * scale); cleatX = backPanelX - (cleatThick * scale);
+                ctx.fillStyle = COLORS.back; ctx.fillRect(backPanelX, startY + T*scale, backThick*scale, (H - 2*T)*scale);
+                ctx.fillStyle = COLORS.cleat; ctx.fillRect(cleatX, startY + T*scale, cleatThick*scale, 100*scale);
+                ctx.fillStyle = COLORS.top; ctx.fillRect(sideX, startY, sideW, T*scale); ctx.fillRect(sideX, startY + (H-T)*scale, sideW, T*scale);
+                 if (shelfQty > 0) {
+                     ctx.fillStyle = COLORS.shelf; const shelfW = D*scale - (20*scale) - (backThick*scale) - (20*scale); const spacing = (H*scale) / (shelfQty + 1);
+                     for(let i=1; i<=shelfQty; i++) { ctx.fillRect(sideX, startY + (spacing*i), shelfW, T*scale); }
+                }
             }
         }
+
+        function drawExplodedView(H, W, D, T, isRecessed, parts, shelfQty) {
+            expCtx.clearRect(0, 0, explodedCanvas.width, explodedCanvas.height);
+            const scale = Math.min(explodedCanvas.width / (W * 3.5), explodedCanvas.height / (H * 1.5));
+            const cx = explodedCanvas.width / 2; const cy = explodedCanvas.height / 2;
+            const fh = H * scale; const fw = W * scale;
+            const drawPart = (partName, dx, dy, dw, dh, color, label) => {
+                expCtx.fillStyle = color; expCtx.globalAlpha = 0.85; expCtx.strokeStyle = "#1e293b"; expCtx.lineWidth = 1;
+                const x = cx - (dw/2) + dx; const y = cy - (dh/2) + dy;
+                expCtx.fillRect(x, y, dw, dh); expCtx.strokeRect(x, y, dw, dh);
+                if (label) {
+                    expCtx.fillStyle = "#000"; expCtx.globalAlpha = 1.0; expCtx.font = "bold 11px sans-serif";
+                    expCtx.textAlign = "center"; expCtx.strokeStyle = 'white'; expCtx.lineWidth = 2;
+                    expCtx.strokeText(partName, x + dw/2, y + dh/2 + 4); expCtx.fillText(partName, x + dw/2, y + dh/2 + 4);
+                }
+            };
+            const backW = (W - 2*T) * scale; const backH = (H - 2*T) * scale;
+            drawPart("Back", -fw/1.5, -fh/4, backW, backH, COLORS.back, true);
+            const cleatW = (W - 2*T) * scale; const cleatH = 100 * scale;
+            drawPart("Cleat", 0, -fh/2 + cleatH/2 + 20, cleatW, cleatH, COLORS.cleat, true);
+            drawPart("Top", 0, -fh/2 - 20, fw - (2*T*scale), T*scale, COLORS.top, true);
+            drawPart("Bottom", 0, fh/2 + 20, fw - (2*T*scale), T*scale, COLORS.top, true);
+            const shW = fw - (2*T*scale); const shH = T*scale;
+            if (shelfQty === 1) { drawPart("Shelf", 0, 0, shW, shH, COLORS.shelf, true); } 
+            else if (shelfQty > 1) {
+                const spacing = fh / (shelfQty + 1);
+                for(let i=1; i<=shelfQty; i++) { const yPos = -(fh/2) + (spacing * i); drawPart(i===1 ? "Shelves" : "", 0, yPos, shW, shH, COLORS.shelf, i===1); }
+            }
+            drawPart("Side", -fw/2 - 40, 0, T*scale, fh, COLORS.side, true);
+            drawPart("Side", fw/2 + 40, 0, T*scale, fh, COLORS.side, true);
+            drawPart("Door", fw/1.5, fh/4, fw, fh, COLORS.door, true);
+            expCtx.globalAlpha = 1.0;
+        }
+
+        function renderCutlist(parts) {
+            const tbody = document.getElementById('cutlist-body'); tbody.innerHTML = '';
+            parts.forEach(part => { tbody.innerHTML += `<tr><td class="px-4 py-3"><div class="w-6 h-6 rounded border border-gray-300" style="background-color: ${part.color}"></div></td><td class="px-4 py-3 font-medium text-slate-900">${part.name}</td><td class="px-4 py-3 text-slate-500">${part.qty}</td><td class="px-4 py-3 font-mono text-slate-600">${part.l} x ${part.w}</td><td class="px-4 py-3 text-slate-600">${part.mat}</td><td class="px-4 py-3 text-xs text-slate-400 italic">${part.notes}</td></tr>`; });
+        }
+
+        function renderInstructionsUI(isRecessed) {
+            const container = document.getElementById('instructions-content');
+            const title = isRecessed ? "Recessed Back (Advanced)" : "Standard Internal Cleat";
+            let html = `<h3 class="text-xl font-bold text-slate-800 mb-4">Assembly Guide: <span class="text-blue-600">${title}</span></h3>`;
+            [{ title: "Phase 1: Prep", steps: ["Cut oversized first.", "Router grooves 8mm deep.", "Pre-drill Oak cleats.", "Seal MDF edges with 50/50 PVA."] },
+            { title: "Phase 2: Glue Up", steps: isRecessed ? ["Dry fit frame.", "Glue & Clamp.", "Slide back panel in from top into groove."] : ["Dry fit frame.", "Insert back panel into grooves.", "Glue & Clamp.", "Clean squeeze-out."] },
+            { title: "Phase 3: Finish", steps: ["Install Oak Cleats.", "Hang cabinet.", "Add safety screw."] }].forEach(phase => {
+                html += `<div class="mb-6"><h4 class="font-bold text-slate-500 uppercase text-xs tracking-wide mb-2 border-b pb-1">${phase.title}</h4><ul class="list-disc pl-5 space-y-2 text-sm text-slate-700">`;
+                phase.steps.forEach(step => html += `<li>${step}</li>`); html += `</ul></div>`;
+            }); container.innerHTML = html;
+        }
         
+        // PDF needs optimized multi-sheet logic too
+        async function generatePDF() {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+            const H = parseInt(document.getElementById('height').value) || 800; const W = parseInt(document.getElementById('width').value) || 500; const D = parseInt(document.getElementById('depth').value) || 300; const shelfQty = parseInt(document.getElementById('shelfQty').value); const includeDoor = document.getElementById('includeDoor').checked; const isRecessed = document.getElementById('recessedBack').checked; const packQty = parseInt(document.getElementById('packQty').value);
+            doc.setFontSize(22); doc.setTextColor(30, 41, 59); doc.text("Workshop Cabinet Plan", 15, 20);
+            doc.setFontSize(12); doc.setTextColor(100); doc.text(`Dimensions: ${H}mm (H) x ${W}mm (W) x ${D}mm (D) | ${shelfQty} Shelves`, 15, 30);
+            const canvas = document.getElementById('cabinetCanvas'); const imgData = canvas.toDataURL('image/png'); doc.addImage(imgData, 'PNG', 15, 50, 180, 100);
+            doc.addPage(); doc.setFontSize(16); doc.setTextColor(0); doc.text("Cut List", 15, 20);
+            doc.autoTable({ html: '#cutlist-body', startY: 25, head: [['Ref', 'Part Name', 'Qty', 'Dimensions', 'Material', 'Notes']], theme: 'grid', headStyles: { fillColor: [51, 65, 85] }, styles: { fontSize: 10 } });
+            
+            const parts = getPartsList(H, W, includeDoor ? D - 18 : D, 18, isRecessed, shelfQty);
+            const packParts = generatePartsForPacking(parts, packQty);
+            
+            // Find best PDF strategy
+            let results = [];
+            results.push({ sim: runSimulation(packParts, Strategies.AreaDesc) });
+            results.push({ sim: runSimulation(packParts, Strategies.LongSideDesc) });
+            results.sort((a, b) => a.sim.sheetCount - b.sim.sheetCount);
+            const winner = results[0].sim;
+
+            const sheetW = 2440; const sheetH = 1220; const kerf = 3; const scale = 0.1; 
+            
+            winner.sheets.forEach((sheetParts, i) => {
+                doc.addPage();
+                doc.setFontSize(16); doc.text(`Sheet ${i + 1} Optimization (18mm MDF)`, 15, 20);
+                const startX = 15; const startY = 30;
+                doc.setDrawColor(100); doc.setFillColor(212, 163, 115); doc.rect(startX, startY, sheetW * scale, sheetH * scale, 'FD');
+                doc.setFontSize(8); doc.setTextColor(0);
+                
+                sheetParts.forEach(p => {
+                    const visualW = p.drawW - kerf; const visualH = p.drawH - kerf;
+                    const x = p.x * scale; const y = p.y * scale;
+                    const w = visualW * scale; const h = visualH * scale;
+                    doc.setFillColor(250, 237, 205); doc.rect(startX + x, startY + y, w, h, 'FD');
+                    if (w > 20 && h > 10) { 
+                        doc.text(`${p.name}`, startX + x + 2, startY + y + 5); 
+                        doc.text(`${Math.round(visualW)}x${Math.round(visualH)}`, startX + x + 2, startY + y + 9); 
+                    }
+                });
+            });
+            
+            doc.addPage(); doc.setFontSize(18); doc.setTextColor(30, 41, 59); doc.text("Assembly Instructions", 15, 20);
+            doc.setFontSize(11); doc.setTextColor(100); doc.text(`Mode: ${isRecessed ? "Recessed Back" : "Standard Cleat"}`, 15, 28);
+            const instructionData = getInstructionData(isRecessed); let cursorY = 40;
+            instructionData.forEach(phase => {
+                doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); doc.text(phase.title, 15, cursorY); cursorY += 7;
+                doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(50);
+                phase.steps.forEach(step => { const lines = doc.splitTextToSize(step, 170); doc.text("\u2022", 15, cursorY); doc.text(lines, 20, cursorY); cursorY += (lines.length * 5) + 2; });
+                cursorY += 5;
+            });
+            doc.save('Cabinet_Plan.pdf');
+        }
+
         updateDesign();
     </script>
 </body>
