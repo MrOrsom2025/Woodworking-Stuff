@@ -36,7 +36,7 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Workshop Cabinet Planner</h1>
-                <p class="text-slate-600 text-sm">18mm MR MDF | Oak Cleats | <span class="text-blue-600 font-bold">v17.1 PDF Repair</span></p>
+                <p class="text-slate-600 text-sm">18mm MR MDF | Oak Cleats | <span class="text-blue-600 font-bold">v17.2 Stability Fix</span></p>
             </div>
             <div class="flex items-center gap-3">
                  <button onclick="generatePDF()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 font-semibold transition">
@@ -233,6 +233,32 @@
             // Run Multi-Strategy Optimizer
             renderOptimizedLayout(partsForPacking); 
         }
+
+        // --- GLOBAL UTILITY FUNCTIONS ---
+
+        function getInstructionData(isRecessed) {
+            const title = isRecessed ? "Recessed Back (Advanced)" : "Standard Internal Cleat";
+            const stepsRecessedPhase2 = ["Dry fit frame.", "Glue & Clamp.", "Slide back panel in from top into groove. **Install Bottom Rail/Spacer (Safety Anchor) at the base of the back edge.**"];
+            const stepsStandardPhase2 = ["Dry fit frame.", "Insert back panel into grooves.", "Glue & Clamp.", "Clean squeeze-out."];
+            const stepsRecessedPhase3 = ["Install Oak Cleats (Screwed from outside, then filled).", "Hang cabinet onto wall rail.", "Safety Screw: Drive a long screw (5x70mm minimum) **horizontally** through the center of the **Bottom Rail/Spacer** and into a wall stud. This anchors the bottom edge and prevents rotation/lifting."];
+            const stepsStandardPhase3 = ["Install Oak Cleats.", "Hang cabinet.", "Add safety screw."];
+
+            return [
+                {
+                    title: "Phase 1: Prep",
+                    steps: ["Cut oversized first.", "Router grooves 8mm deep.", "Pre-drill Oak cleats.", "Seal MDF edges with 50/50 PVA."]
+                },
+                {
+                    title: "Phase 2: Glue Up",
+                    steps: isRecessed ? stepsRecessedPhase2 : stepsStandardPhase2
+                },
+                {
+                    title: "Phase 3: Finish",
+                    steps: isRecessed ? stepsRecessedPhase3 : stepsStandardPhase3
+                }
+            ];
+        }
+
 
         // --- GUILLOTINE PACKING ENGINE (Rectangle Split) ---
         class GuillotinePacker {
@@ -563,9 +589,8 @@
             const container = document.getElementById('instructions-content');
             const title = isRecessed ? "Recessed Back (Advanced)" : "Standard Internal Cleat";
             let html = `<h3 class="text-xl font-bold text-slate-800 mb-4">Assembly Guide: <span class="text-blue-600">${title}</span></h3>`;
-            [{ title: "Phase 1: Prep", steps: ["Cut oversized first.", "Router grooves 8mm deep.", "Pre-drill Oak cleats.", "Seal MDF edges with 50/50 PVA."] },
-            { title: "Phase 2: Glue Up", steps: isRecessed ? ["Dry fit frame.", "Glue & Clamp.", "Slide back panel in from top into groove. **Install Bottom Rail/Spacer (Safety Anchor) at the base of the back edge.**"] : ["Dry fit frame.", "Insert back panel into grooves.", "Glue & Clamp.", "Clean squeeze-out."] },
-            { title: "Phase 3: Finish", steps: isRecessed ? ["Install Oak Cleats (Screwed from outside, then filled).", "Hang cabinet onto wall rail.", "Safety Screw: Drive a long screw (5x70mm minimum) **horizontally** through the center of the **Bottom Rail/Spacer** and into a wall stud. This anchors the bottom edge and prevents rotation/lifting."] : ["Install Oak Cleats.", "Hang cabinet.", "Add safety screw."] }].forEach(phase => {
+            const instructionData = getInstructionData(isRecessed); // Using the global function
+            instructionData.forEach(phase => {
                 html += `<div class="mb-6"><h4 class="font-bold text-slate-500 uppercase text-xs tracking-wide mb-2 border-b pb-1">${phase.title}</h4><ul class="list-disc pl-5 space-y-2 text-sm text-slate-700">`;
                 phase.steps.forEach(step => html += `<li>${step}</li>`); html += `</ul></div>`;
             }); container.innerHTML = html;
@@ -601,9 +626,16 @@
             
             // Find best PDF strategy
             let results = [];
-            results.push({ sim: runSimulation(packParts, Strategies.AreaDesc) });
-            results.push({ sim: runSimulation(packParts, Strategies.LongSideDesc) });
-            results.sort((a, b) => a.sim.sheetCount - b.sim.sheetCount);
+            results.push({ sim: runSimulation(packParts, Strategies.AreaDesc), name: "Area (Big First)" });
+            results.push({ sim: runSimulation(packParts, Strategies.LongSideDesc), name: "Long Side (Strip)" });
+            results.push({ sim: runSimulation(packParts, Strategies.ShortSideDesc), name: "Short Side (Wide)" });
+            results.push({ sim: runSimulation(packParts, Strategies.PerimeterDesc), name: "Perimeter" });
+            results.sort((a, b) => {
+                if (a.sim.sheetCount !== b.sim.sheetCount) {
+                    return a.sim.sheetCount - b.sim.sheetCount; 
+                }
+                return b.sim.firstSheetCount - a.sim.firstSheetCount; 
+            });
             const winner = results[0].sim;
 
             const sheetW = 2440; const sheetH = 1220; const kerf = 3; const scale = 0.1; 
@@ -636,7 +668,8 @@
             // FINAL PAGE: INSTRUCTIONS
             doc.addPage(); doc.setFontSize(18); doc.setTextColor(30, 41, 59); doc.text("Assembly Instructions", 15, 20);
             doc.setFontSize(11); doc.setTextColor(100); doc.text(`Mode: ${isRecessed ? "Recessed Back" : "Standard Cleat"}`, 15, 28);
-            const instructionData = getInstructionData(isRecessed); let cursorY = 40;
+            const instructionData = getInstructionData(isRecessed); // Use the global function here
+            let cursorY = 40;
             instructionData.forEach(phase => {
                 doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.setTextColor(0); doc.text(phase.title, 15, cursorY); cursorY += 7;
                 doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(50);
