@@ -36,7 +36,7 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Workshop Cabinet Planner</h1>
-                <p class="text-slate-600 text-sm">18mm MR MDF | Oak Cleats | <span class="text-blue-600 font-bold">v16.1 Brute-Force Optimizer</span></p>
+                <p class="text-slate-600 text-sm">18mm MR MDF | Oak Cleats | <span class="text-blue-600 font-bold">v17.0 Dedicated Safety Rail</span></p>
             </div>
             <div class="flex items-center gap-3">
                  <button onclick="generatePDF()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 font-semibold transition">
@@ -48,7 +48,7 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="grid grid-cols-1 lg:col-span-12 gap-8">
             <!-- LEFT COLUMN -->
             <div class="lg:col-span-4 bg-slate-50 p-5 rounded-lg border border-slate-200 space-y-6 h-fit">
                 <!-- Dimensions -->
@@ -75,8 +75,8 @@
                     <div class="mb-4">
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Internal Shelves</label>
                         <div class="flex items-center gap-2">
-                            <input type="range" id="shelfQty" min="0" max="4" value="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateDesign()">
-                            <span id="shelfQtyVal" class="text-sm font-bold text-blue-600 w-6 text-center">1</span>
+                            <input type="range" id="shelfQty" min="0" max="4" value="2" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateDesign()">
+                            <span id="shelfQtyVal" class="text-sm font-bold text-blue-600 w-6 text-center">2</span>
                         </div>
                         <p id="shelf-gap-info" class="text-xs text-slate-500 mt-1">Calculating gap...</p>
                     </div>
@@ -448,7 +448,8 @@
                     { name: "Bottom Panel", qty: 1, l: W - (2*T), w: D, mat: "18mm MDF", color: COLORS.top, notes: "Full Depth" },
                     { name: "Back Panel", qty: 1, l: H - (2*T) + 16, w: W - (2*T) + 16, mat: "6mm MDF", color: COLORS.back, notes: "Grooved fit" },
                     { name: "Door", qty: 1, l: H - 4, w: W - 4, mat: "18mm MDF", color: COLORS.door, notes: "Overlay" },
-                    { name: "Cleat", qty: 2, l: W - (2*T), w: 100, mat: "Oak", color: COLORS.cleat, notes: "Hardwood" }
+                    { name: "Cleat", qty: 2, l: W - (2*T), w: 100, mat: "Oak", color: COLORS.cleat, notes: "Hardwood" },
+                    { name: "Bottom Rail", qty: 1, l: W - (2*T), w: 100, mat: "18mm MDF", color: COLORS.back, notes: "Safety screw anchor" } // ADDED Rail
                 ];
                 if (shelfQty > 0) parts.push({ name: "Shelf", qty: shelfQty, l: W - (2*T) - 2, w: internalDepth - hingeClearance, mat: "18mm MDF", color: COLORS.shelf, notes: "Set back" });
             } else {
@@ -458,7 +459,8 @@
                     { name: "Top/Bottom", qty: 2, l: W - (2*T), w: D, mat: "18mm MDF", color: COLORS.top, notes: "Groove" },
                     { name: "Back Panel", qty: 1, l: H - (2*T) + 16, w: W - (2*T) + 16, mat: "6mm MDF", color: COLORS.back, notes: "Grooved fit" },
                     { name: "Door", qty: 1, l: H - 4, w: W - 4, mat: "18mm MDF", color: COLORS.door, notes: "Overlay" },
-                    { name: "Cleat", qty: 2, l: W - (2*T), w: 100, mat: "Oak", color: COLORS.cleat, notes: "Hardwood" }
+                    { name: "Cleat", qty: 2, l: W - (2*T), w: 100, mat: "Oak", color: COLORS.cleat, notes: "Hardwood" },
+                    { name: "Bottom Rail", qty: 1, l: W - (2*T), w: 100, mat: "18mm MDF", color: COLORS.back, notes: "Safety screw anchor" } // ADDED Rail
                 ];
                 if (shelfQty > 0) parts.push({ name: "Shelf", qty: shelfQty, l: W - (2*T) - 2, w: D - backInset - backThick - hingeClearance, mat: "18mm MDF", color: COLORS.shelf, notes: "Reduced" });
             }
@@ -494,7 +496,11 @@
                 cleatX = sideX + sideW - (cleatThick * scale); backPanelX = cleatX - (backThick * scale);
                 ctx.fillStyle = COLORS.cleat; ctx.fillRect(cleatX, startY + T*scale, cleatThick*scale, 100*scale);
                 ctx.fillStyle = COLORS.back; ctx.fillRect(backPanelX, startY + T*scale, backThick*scale, (H - 2*T)*scale);
-                ctx.fillStyle = COLORS.top; ctx.fillRect(sideX, startY, backPanelX - sideX, T*scale); ctx.fillRect(sideX, startY + (H-T)*scale, sideW, T*scale); 
+                ctx.fillStyle = COLORS.top; ctx.fillRect(sideX, startY, backPanelX - sideX, T*scale); 
+                // Draw Bottom Rail (New)
+                const railH = 100 * scale;
+                ctx.fillStyle = COLORS.back; ctx.fillRect(sideX, startY + (H - railH) * scale, sideW, railH); 
+                
                 if (shelfQty > 0) {
                      ctx.fillStyle = COLORS.shelf; const shelfW = backPanelX - sideX - (20*scale); const spacing = (H*scale) / (shelfQty + 1);
                      for(let i=1; i<=shelfQty; i++) { ctx.fillRect(sideX, startY + (spacing*i), shelfW, T*scale); }
@@ -503,7 +509,10 @@
                 backPanelX = sideX + sideW - (20 * scale) - (backThick * scale); cleatX = backPanelX - (cleatThick * scale);
                 ctx.fillStyle = COLORS.back; ctx.fillRect(backPanelX, startY + T*scale, backThick*scale, (H - 2*T)*scale);
                 ctx.fillStyle = COLORS.cleat; ctx.fillRect(cleatX, startY + T*scale, cleatThick*scale, 100*scale);
-                ctx.fillStyle = COLORS.top; ctx.fillRect(sideX, startY, sideW, T*scale); ctx.fillRect(sideX, startY + (H-T)*scale, sideW, T*scale);
+                ctx.fillStyle = COLORS.top; ctx.fillRect(sideX, startY, sideW, T*scale); 
+                // Draw Bottom Rail (New)
+                const railH = 100 * scale;
+                ctx.fillStyle = COLORS.back; ctx.fillRect(cleatX, startY + (H - railH) * scale, sideW, railH); // Positioned between cleat and bottom
                  if (shelfQty > 0) {
                      ctx.fillStyle = COLORS.shelf; const shelfW = D*scale - (20*scale) - (backThick*scale) - (20*scale); const spacing = (H*scale) / (shelfQty + 1);
                      for(let i=1; i<=shelfQty; i++) { ctx.fillRect(sideX, startY + (spacing*i), shelfW, T*scale); }
@@ -530,6 +539,7 @@
             drawPart("Back", -fw/1.5, -fh/4, backW, backH, COLORS.back, true);
             const cleatW = (W - 2*T) * scale; const cleatH = 100 * scale;
             drawPart("Cleat", 0, -fh/2 + cleatH/2 + 20, cleatW, cleatH, COLORS.cleat, true);
+            drawPart("Bottom Rail", 0, fh/2 - 20, cleatW, cleatH, COLORS.back, true); // Added rail to exploded view
             drawPart("Top", 0, -fh/2 - 20, fw - (2*T*scale), T*scale, COLORS.top, true);
             drawPart("Bottom", 0, fh/2 + 20, fw - (2*T*scale), T*scale, COLORS.top, true);
             const shW = fw - (2*T*scale); const shH = T*scale;
@@ -554,8 +564,8 @@
             const title = isRecessed ? "Recessed Back (Advanced)" : "Standard Internal Cleat";
             let html = `<h3 class="text-xl font-bold text-slate-800 mb-4">Assembly Guide: <span class="text-blue-600">${title}</span></h3>`;
             [{ title: "Phase 1: Prep", steps: ["Cut oversized first.", "Router grooves 8mm deep.", "Pre-drill Oak cleats.", "Seal MDF edges with 50/50 PVA."] },
-            { title: "Phase 2: Glue Up", steps: isRecessed ? ["Dry fit frame.", "Glue & Clamp.", "Slide back panel in from top into groove."] : ["Dry fit frame.", "Insert back panel into grooves.", "Glue & Clamp.", "Clean squeeze-out."] },
-            { title: "Phase 3: Finish", steps: ["Install Oak Cleats.", "Hang cabinet.", "Add safety screw."] }].forEach(phase => {
+            { title: "Phase 2: Glue Up", steps: isRecessed ? ["Dry fit frame.", "Glue & Clamp.", "Slide back panel in from top into groove. **Install Bottom Rail/Spacer (Safety Anchor) at the base of the back edge.**"] : ["Dry fit frame.", "Insert back panel into grooves.", "Glue & Clamp.", "Clean squeeze-out."] },
+            { title: "Phase 3: Finish", steps: isRecessed ? ["Install Oak Cleats (Screwed from outside, then filled).", "Hang cabinet onto wall rail.", "Safety Screw: Drive a long screw (5x70mm minimum) **horizontally** through the center of the **Bottom Rail/Spacer** and into a wall stud. This anchors the bottom edge and prevents rotation/lifting."] : ["Install Oak Cleats.", "Hang cabinet.", "Add safety screw."] }].forEach(phase => {
                 html += `<div class="mb-6"><h4 class="font-bold text-slate-500 uppercase text-xs tracking-wide mb-2 border-b pb-1">${phase.title}</h4><ul class="list-disc pl-5 space-y-2 text-sm text-slate-700">`;
                 phase.steps.forEach(step => html += `<li>${step}</li>`); html += `</ul></div>`;
             }); container.innerHTML = html;
