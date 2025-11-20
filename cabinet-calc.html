@@ -36,7 +36,7 @@
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800">Workshop Cabinet Planner</h1>
-                <p class="text-slate-600 text-sm">18mm MR MDF | Oak Cleats | <span class="text-blue-600 font-bold">v17.0 Dedicated Safety Rail</span></p>
+                <p class="text-slate-600 text-sm">18mm MR MDF | Oak Cleats | <span class="text-blue-600 font-bold">v17.1 PDF Repair</span></p>
             </div>
             <div class="flex items-center gap-3">
                  <button onclick="generatePDF()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded shadow flex items-center gap-2 font-semibold transition">
@@ -575,11 +575,26 @@
         async function generatePDF() {
             const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
             const H = parseInt(document.getElementById('height').value) || 800; const W = parseInt(document.getElementById('width').value) || 500; const D = parseInt(document.getElementById('depth').value) || 300; const shelfQty = parseInt(document.getElementById('shelfQty').value); const includeDoor = document.getElementById('includeDoor').checked; const isRecessed = document.getElementById('recessedBack').checked; const packQty = parseInt(document.getElementById('packQty').value);
+            
+            // PAGE 1: OVERVIEW AND BLUEPRINT
             doc.setFontSize(22); doc.setTextColor(30, 41, 59); doc.text("Workshop Cabinet Plan", 15, 20);
             doc.setFontSize(12); doc.setTextColor(100); doc.text(`Dimensions: ${H}mm (H) x ${W}mm (W) x ${D}mm (D) | ${shelfQty} Shelves`, 15, 30);
             const canvas = document.getElementById('cabinetCanvas'); const imgData = canvas.toDataURL('image/png'); doc.addImage(imgData, 'PNG', 15, 50, 180, 100);
-            doc.addPage(); doc.setFontSize(16); doc.setTextColor(0); doc.text("Cut List", 15, 20);
-            doc.autoTable({ html: '#cutlist-body', startY: 25, head: [['Ref', 'Part Name', 'Qty', 'Dimensions', 'Material', 'Notes']], theme: 'grid', headStyles: { fillColor: [51, 65, 85] }, styles: { fontSize: 10 } });
+            
+            // PAGE 2: CUT LIST (Using data directly from the HTML table body)
+            doc.addPage(); 
+            doc.setFontSize(16); doc.setTextColor(0); doc.text("Cut List", 15, 20);
+            
+            // The magic fix: Target the tbody directly which contains the required cells (including the color box)
+            doc.autoTable({ 
+                html: '#cutlist-body', 
+                startY: 25, 
+                // Define headers to match the 6 columns in the tbody
+                head: [['Ref', 'Part Name', 'Qty', 'Dimensions', 'Material', 'Notes']], 
+                theme: 'grid', 
+                headStyles: { fillColor: [51, 65, 85] }, 
+                styles: { fontSize: 10 } 
+            });
             
             const parts = getPartsList(H, W, includeDoor ? D - 18 : D, 18, isRecessed, shelfQty);
             const packParts = generatePartsForPacking(parts, packQty);
@@ -593,6 +608,7 @@
 
             const sheetW = 2440; const sheetH = 1220; const kerf = 3; const scale = 0.1; 
             
+            // PAGES 3+: OPTIMIZATION LAYOUTS
             winner.sheets.forEach((sheetParts, i) => {
                 doc.addPage();
                 doc.setFontSize(16); doc.text(`Sheet ${i + 1} Optimization (18mm MDF)`, 15, 20);
@@ -604,14 +620,20 @@
                     const visualW = p.drawW - kerf; const visualH = p.drawH - kerf;
                     const x = p.x * scale; const y = p.y * scale;
                     const w = visualW * scale; const h = visualH * scale;
-                    doc.setFillColor(250, 237, 205); doc.rect(startX + x, startY + y, w, h, 'FD');
+                    // Draw colored box
+                    doc.setFillColor(p.color); doc.rect(startX + x, startY + y, w, h, 'FD');
+                    
                     if (w > 20 && h > 10) { 
+                        // Add Text (White on top of color)
+                        doc.setTextColor(255, 255, 255); 
                         doc.text(`${p.name}`, startX + x + 2, startY + y + 5); 
                         doc.text(`${Math.round(visualW)}x${Math.round(visualH)}`, startX + x + 2, startY + y + 9); 
+                        doc.setTextColor(0); // Reset to black for surrounding text
                     }
                 });
             });
             
+            // FINAL PAGE: INSTRUCTIONS
             doc.addPage(); doc.setFontSize(18); doc.setTextColor(30, 41, 59); doc.text("Assembly Instructions", 15, 20);
             doc.setFontSize(11); doc.setTextColor(100); doc.text(`Mode: ${isRecessed ? "Recessed Back" : "Standard Cleat"}`, 15, 28);
             const instructionData = getInstructionData(isRecessed); let cursorY = 40;
